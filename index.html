@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Volleyball Tournament 2026</title>
+<style>
+:root{--navy:#14243a;--blue:#1769aa;--red:#c83d4b;--green:#16845b;--bg:#f2f5f9;--ink:#182334;--muted:#66758a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink)}
+header{background:linear-gradient(120deg,#10243e,#1d5480);color:#fff;padding:24px 18px}
+.wrap{max-width:1100px;margin:auto;padding:0 16px}header h1{margin:0 0 6px;font-size:clamp(23px,4vw,34px)}header p{margin:0;color:#d7e5f2}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:18px auto}
+button,.tab{border:0;border-radius:9px;padding:11px 15px;font-weight:700;cursor:pointer}
+.tab{background:#e1e8f0;color:#26384d}.tab.active{background:var(--blue);color:#fff}
+button.primary{background:var(--blue);color:#fff}button.green{background:var(--green);color:#fff}button.red{background:var(--red);color:#fff}button.light{background:#e8eef5;color:#20344d}
+button:disabled{opacity:.45;cursor:not-allowed}
+.panel{display:none;background:#fff;border-radius:15px;padding:20px;margin:0 0 22px;box-shadow:0 4px 18px #14243a0d}.panel.active{display:block}
+h2{margin:0 0 14px;font-size:22px}.muted{color:var(--muted);font-size:13px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.group{border:1px solid #e0e7ef;border-radius:12px;padding:14px}.group h3{margin:0 0 10px}
+input,select{width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px}
+.team-row{display:flex;gap:8px;align-items:center;margin:7px 0}.team-row small{width:28px;color:var(--muted)}
+.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.team-score{padding:20px 12px;border-radius:13px;color:#fff;text-align:center}
+.team-score.a{background:var(--red)}.team-score.b{background:var(--blue)}
+.team-score h3{margin:0 0 12px;font-size:clamp(15px,2vw,22px);overflow-wrap:anywhere}
+.points{font-size:clamp(48px,9vw,78px);font-weight:800;line-height:1.1}
+.sets{font-size:14px;margin:8px 0 14px}.score-controls{display:flex;justify-content:center;gap:8px}
+.score-controls button{font-size:20px;min-width:48px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.row>*{flex:1}.row button{flex:0 0 auto}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:10px 8px;border-bottom:1px solid #e6ebf1;text-align:left}th{background:#f4f7fa}
+.match{border:1px solid #e1e7ef;border-radius:10px;padding:12px;margin:8px 0}
+.match-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+.badge{display:inline-block;background:#e7f4ed;color:#147447;padding:4px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.projection{background:#0d1726;color:#fff;border-radius:14px;padding:24px;text-align:center}
+.projection .team-score{min-height:190px;display:flex;flex-direction:column;justify-content:center}
+.projection .points{font-size:clamp(70px,13vw,120px)}
+footer{text-align:center;color:#718096;font-size:12px;padding:20px}
+@media(max-width:600px){.panel{padding:14px}.scoreboard{gap:8px}.team-score{padding:14px 6px}.score-controls button{min-width:40px;padding:9px}}
+</style>
+</head>
+<body>
+
+<div id="loginOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(5,15,28,.88);padding:20px;align-items:center;justify-content:center">
+ <div style="background:#fff;color:#182334;width:min(420px,100%);border-radius:16px;padding:24px;box-shadow:0 18px 60px #0005">
+  <h2 style="margin:0 0 6px">LOGIN ADMIN</h2>
+  <p class="muted" style="margin:0 0 18px">Masuk untuk mengelola Volleyball Tournament 2026.</p>
+  <form id="adminLoginForm" onsubmit="submitAdminLogin(event)">
+   <label style="display:block;margin:10px 0 6px;font-weight:700">Username</label>
+   <input id="adminUsername" autocomplete="username" required>
+   <label style="display:block;margin:14px 0 6px;font-weight:700">Password</label>
+   <input id="adminPassword" type="password" autocomplete="current-password" required>
+   <div id="authMessage" class="muted" style="min-height:22px;margin:12px 0"></div>
+   <div class="row">
+    <button class="primary" id="loginSubmitButton" type="submit">LOGIN</button>
+    <button class="light" type="button" onclick="closeAdminLogin()">BATAL</button>
+   </div>
+  </form>
+ </div>
+</div>
+<iframe name="volleyApiFrame" id="volleyApiFrame" title="API login" style="display:none"></iframe>
+
+<header><div class="wrap"><h1>VOLLEYBALL TOURNAMENT 2026</h1><p>20 Tim · 4 Grup · 1 Lapangan · Best of 5</p></div></header>
+<main class="wrap">
+<div class="row" style="margin-top:18px">
+<label style="max-width:260px">Mode tampilan
+<select id="roleSelect" onchange="setRole(this.value)">
+<option value="admin">ADMIN — Pengelola turnamen</option>
+<option value="viewer">PENONTON — Tampilan publik</option>
+</select>
+</label>
+<span class="muted" id="roleDescription">Mode penonton: hanya dapat melihat jadwal, klasemen, bagan final, dan Score.</span>
+<button class="primary" id="adminLoginButton" type="button" onclick="openAdminLogin()">Login ADMIN</button>
+<button class="red" id="adminLogoutButton" type="button" onclick="adminLogout()" style="display:none">Logout</button>
+</div>
+<nav id="mainNav">
+<button class="tab active" data-tab="score" data-roles="admin">Operator Live Score</button>
+<button class="tab" data-tab="teams" data-roles="admin">Data Tim</button>
+<button class="tab" data-tab="schedule" data-roles="admin viewer">Jadwal</button>
+<button class="tab" data-tab="standings" data-roles="admin viewer">Klasemen</button>
+<button class="tab" data-tab="bracket" data-roles="admin viewer">Bagan Final</button>
+<button class="tab" data-tab="projector" data-roles="admin viewer">Score</button>
+</nav>
+
+<section id="score" class="panel active">
+<h2>Operator Live Score</h2>
+<p class="muted">Pilih pertandingan, lalu tekan + atau − untuk mengubah skor. Klik “Selesaikan Set” setelah set berakhir.</p>
+<div class="row"><label style="flex:2">Pilih pertandingan<select id="matchSelect"></select></label><label>Nomor pertandingan<input id="matchNumber" readonly></label></div>
+<div class="scoreboard">
+<div class="team-score a"><h3 id="scoreNameA">TIM 01</h3><div class="points" id="pointsA">0</div><div class="sets">Menang set: <b id="setsA">0</b></div><div class="score-controls"><button class="light" onclick="changePoint('a',-1)">−</button><button class="green" onclick="changePoint('a',1)">+</button></div></div>
+<div class="team-score b"><h3 id="scoreNameB">TIM 02</h3><div class="points" id="pointsB">0</div><div class="sets">Menang set: <b id="setsB">0</b></div><div class="score-controls"><button class="light" onclick="changePoint('b',-1)">−</button><button class="green" onclick="changePoint('b',1)">+</button></div></div>
+</div>
+<div class="row"><div><b id="setLabel">SET 1 / 5</b><p class="muted">Set 1–4 sampai 25 poin, set 5 sampai 15 poin, selisih minimal 2.</p></div><button class="primary" onclick="finishSet()" id="finishSetBtn">Selesaikan Set</button><button class="red" onclick="resetCurrent()">Reset pertandingan</button></div>
+<div id="scoreMessage" class="muted" aria-live="polite"></div>
+</section>
+
+<section id="teams" class="panel">
+<h2>Pengelolaan 20 Tim</h2>
+<p class="muted"><b>Edit nama tim di halaman ini.</b> Ganti tulisan pada kotak nama tim, lalu klik “Simpan Nama Tim”. Tim dibagi otomatis: 5 tim per grup.</p>
+<div class="grid" id="teamEditor"></div>
+<div class="row"><button class="primary" onclick="saveTeams()">Simpan Nama Tim</button><button class="light" onclick="resetTeams()">Kembalikan Nama Awal</button></div>
+<div id="teamMessage" class="muted"></div>
+</section>
+
+<section id="schedule" class="panel">
+<h2>Jadwal Babak Grup</h2>
+<p class="muted">Setiap grup memainkan sistem setengah kompetisi: 10 pertandingan per grup, total 40 pertandingan. Karena hanya ada satu lapangan, pertandingan dimainkan bergantian.</p>
+<div class="row"><label>Filter grup<select id="groupFilter" onchange="renderSchedule()"><option value="ALL">Semua Grup</option><option>A</option><option>B</option><option>C</option><option>D</option></select></label><label>Status<select id="statusFilter" onchange="renderSchedule()"><option value="ALL">Semua status</option><option value="Belum dimainkan">Belum dimainkan</option><option value="Selesai">Selesai</option></select></label></div>
+<div id="scheduleList"></div>
+</section>
+
+<section id="standings" class="panel">
+<h2>Klasemen Grup</h2>
+<p class="muted">Klasemen dihitung dari hasil pertandingan yang sudah diselesaikan. Poin kemenangan: menang 3–0 atau 3–1 mendapat 3 poin; menang 3–2 mendapat 2 poin; kalah 2–3 mendapat 1 poin.</p>
+<div id="standingsList" class="grid"></div>
+</section>
+
+<section id="bracket" class="panel">
+<h2>Bagan Babak Gugur</h2>
+<p class="muted">Delapan tim lolos: juara dan runner-up Grup A, B, C, dan D. Pasangan perempat final mengikuti susunan di bawah ini. Nama tim akan terisi setelah babak grup selesai dan klasemen tersedia.</p>
+<div id="bracketList"></div>
+<p class="muted">QF1: Juara A vs Runner-up B · QF2: Juara B vs Runner-up A · QF3: Juara C vs Runner-up D · QF4: Juara D vs Runner-up C. Pemenang QF1/QF2 bertemu di SF1, pemenang QF3/QF4 di SF2.</p>
+</section>
+
+<section id="projector" class="panel">
+<h2>Score — Tampilan Penonton</h2>
+<p class="muted">Papan skor untuk penonton. Tampilan ini mengikuti pertandingan yang dipilih pada browser ini. Tekan F11 untuk layar penuh.</p>
+<div class="projection">
+<div style="font-size:13px;letter-spacing:2px;color:#a8c5e3">LIVE VOLLEYBALL SCORE · LAPANGAN 1</div>
+<h2 style="margin:10px 0 4px;color:#fff" id="projectMatch">PERTANDINGAN 1</h2>
+<div class="scoreboard">
+<div class="team-score a"><h3 id="projectNameA">TIM 01</h3><div class="points" id="projectPointsA">0</div><div class="sets">SET <b id="projectSetsA">0</b></div></div>
+<div class="team-score b"><h3 id="projectNameB">TIM 02</h3><div class="points" id="projectPointsB">0</div><div class="sets">SET <b id="projectSetsB">0</b></div></div>
+</div>
+<h2 style="color:#fff" id="projectSet">SET 1 / 5</h2>
+</div>
+<button class="primary" style="margin-top:12px" onclick="window.print()">Cetak / Simpan PDF</button>
+</section>
+</main>
+<footer>Volleyball Tournament 2026 · Login ADMIN menggunakan Google Spreadsheet · Data pertandingan saat ini tersimpan pada browser (localStorage).</footer>
+
+<script>
+const initialTeams=Array.from({length:20},(_,i)=>`TIM ${String(i+1).padStart(2,'0')}`);
+let teams=JSON.parse(localStorage.getItem('volleyTeams')||'null')||initialTeams;
+let matches=JSON.parse(localStorage.getItem('volleyMatches')||'null');
+let currentId=0;
+function makeMatches(){
+ const out=[];let id=1;
+ for(let g=0;g<4;g++){
+  const ids=Array.from({length:5},(_,i)=>g*5+i);
+  for(let i=0;i<5;i++)for(let j=i+1;j<5;j++)out.push({id:id++,group:'ABCD'[g],a:ids[i],b:ids[j],pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});
+ }
+ return out;
+}
+if(!matches||matches.length!==40)matches=makeMatches();
+function save(){localStorage.setItem('volleyTeams',JSON.stringify(teams));localStorage.setItem('volleyMatches',JSON.stringify(matches));}
+function current(){return matches.find(m=>m.id===currentId)||matches[0]}
+function teamName(index){return teams[index]||`TIM ${index+1}`}
+function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='teams')renderTeams();if(id==='schedule')renderSchedule();if(id==='standings')renderStandings();if(id==='bracket')renderBracket();if(id==='projector')renderScore();}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
+let currentRole='viewer';
+let adminAuthenticated=false;
+function setRole(role){
+ if(role==='admin' && !adminAuthenticated){
+  document.getElementById('roleSelect').value='viewer';
+  role='viewer';
+  document.getElementById('authMessage').textContent='Silakan login ADMIN terlebih dahulu.';
+ }
+ currentRole=role;
+ document.querySelectorAll('.tab').forEach(b=>{
+  const allowed=b.dataset.roles.split(' ').includes(role);
+  b.style.display=allowed?'':'none';
+ });
+ document.getElementById('roleDescription').textContent=role==='admin'
+  ?'Admin aktif: dapat mengelola tim, skor, jadwal, dan hasil.'
+  :'Mode penonton: hanya dapat melihat jadwal, klasemen, bagan final, dan Score.';
+ if(role==='viewer') showTab('schedule'); else showTab('score');
+ document.getElementById('adminLoginButton').style.display=role==='admin'?'none':'';
+ document.getElementById('adminLogoutButton').style.display=role==='admin'?'':'none';
+}
+function renderTeams(){
+ const el=document.getElementById('teamEditor');el.innerHTML='';
+ for(let g=0;g<4;g++){let box=document.createElement('div');box.className='group';box.innerHTML=`<h3>GRUP ${'ABCD'[g]}</h3>`;
+  for(let i=0;i<5;i++){let ix=g*5+i,row=document.createElement('div');row.className='team-row';row.innerHTML=`<small>${'ABCD'[g]}${i+1}</small><input aria-label="Nama tim ${ix+1}" value="${escapeHtml(teams[ix])}" data-team="${ix}">`;box.appendChild(row)}el.appendChild(box)}
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function saveTeams(){
+ if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}
+ document.querySelectorAll('[data-team]').forEach(input=>teams[+input.dataset.team]=input.value.trim()||initialTeams[+input.dataset.team]);
+ save();renderTeams();renderMatchSelect();renderScore();document.getElementById('teamMessage').textContent='Nama tim berhasil disimpan di browser ini.';
+}
+function resetTeams(){if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}if(!confirm('Kembalikan semua nama tim ke nama awal?'))return;teams=[...initialTeams];save();renderTeams();renderMatchSelect();renderScore();}
+function renderMatchSelect(){
+ const sel=document.getElementById('matchSelect');sel.innerHTML=matches.map(m=>`<option value="${m.id}">Match ${m.id} · Grup ${m.group} · ${escapeHtml(teamName(m.a))} vs ${escapeHtml(teamName(m.b))}</option>`).join('');
+ sel.value=String(currentId||1);currentId=+sel.value;sel.onchange=()=>{currentId=+sel.value;renderScore()};
+}
+function renderScore(){
+ const m=current();if(!m)return;
+ document.getElementById('matchNumber').value=m.id;document.getElementById('scoreNameA').textContent=teamName(m.a);document.getElementById('scoreNameB').textContent=teamName(m.b);
+ document.getElementById('pointsA').textContent=m.pointsA;document.getElementById('pointsB').textContent=m.pointsB;document.getElementById('setsA').textContent=m.setsA;document.getElementById('setsB').textContent=m.setsB;
+ document.getElementById('setLabel').textContent=m.done?'PERTANDINGAN SELESAI':`SET ${m.setNo} / 5`;
+ document.getElementById('finishSetBtn').disabled=m.done||m.pointsA===m.pointsB;
+ document.getElementById('scoreMessage').textContent=m.done?`Pemenang: ${teamName(m.setsA===3?m.a:m.b)}`:'';
+ document.getElementById('projectMatch').textContent=`PERTANDINGAN ${m.id} · GRUP ${m.group}`;
+ document.getElementById('projectNameA').textContent=teamName(m.a);document.getElementById('projectNameB').textContent=teamName(m.b);
+ document.getElementById('projectPointsA').textContent=m.pointsA;document.getElementById('projectPointsB').textContent=m.pointsB;
+ document.getElementById('projectSetsA').textContent=m.setsA;document.getElementById('projectSetsB').textContent=m.setsB;document.getElementById('projectSet').textContent=m.done?'PERTANDINGAN SELESAI':`SET ${m.setNo} / 5`;
+}
+function changePoint(side,delta){if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}let m=current();if(m.done)return;let key=side==='a'?'pointsA':'pointsB';m[key]=Math.max(0,m[key]+delta);save();renderScore();}
+function finishSet(){
+ if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}
+ let m=current();if(m.done||m.pointsA===m.pointsB)return;
+ let target=m.setNo===5?15:25,high=Math.max(m.pointsA,m.pointsB),low=Math.min(m.pointsA,m.pointsB);
+ if(high<target||high-low<2){alert(`Set belum memenuhi syarat. Set ${m.setNo} harus mencapai minimal ${target} poin dan unggul 2 poin.`);return;}
+ let winner=m.pointsA>m.pointsB?'A':'B';m.setResults.push(`${m.pointsA}-${m.pointsB}`);
+ if(winner==='A')m.setsA++;else m.setsB++;
+ m.pointsA=0;m.pointsB=0;
+ if(m.setsA===3||m.setsB===3){m.done=true;}else m.setNo++;
+ save();renderScore();renderSchedule();renderStandings();
+}
+function resetCurrent(){if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}if(!confirm('Reset skor pertandingan ini?'))return;let m=current();Object.assign(m,{pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});save();renderScore();renderSchedule();renderStandings();}
+function renderSchedule(){
+ let gf=document.getElementById('groupFilter').value,sf=document.getElementById('statusFilter').value;
+ let list=matches.filter(m=>(gf==='ALL'||m.group===gf)&&(sf==='ALL'||(m.done?'Selesai':'Belum dimainkan')===sf));
+ document.getElementById('scheduleList').innerHTML=list.map(m=>`<div class="match"><div class="match-top"><span>PERTANDINGAN ${m.id} · GRUP ${m.group}</span><span class="badge">${m.done?'Selesai':'Belum dimainkan'}</span></div><b>${escapeHtml(teamName(m.a))} vs ${escapeHtml(teamName(m.b))}</b><div class="muted">${m.done?`Hasil set: ${m.setResults.join(', ')} · Skor set ${m.setsA}-${m.setsB}`:'Lapangan 1 · Urutan sesuai nomor pertandingan'}</div><button class="light" style="margin-top:8px" onclick="selectMatch(${m.id})">Buka di Live Score</button></div>`).join('')||'<p class="muted">Tidak ada pertandingan.</p>';
+}
+function selectMatch(id){currentId=id;document.getElementById('matchSelect').value=id;showTab('score');renderScore();}
+function calcGroup(g){
+ let ids=Array.from({length:5},(_,i)=>g*5+i);
+ let rows=ids.map(id=>({id,name:teamName(id),played:0,w:0,l:0,pts:0,setsFor:0,setsAgainst:0,points:0}));
+ matches.filter(m=>m.group==='ABCD'[g]&&m.done).forEach(m=>{
+  let a=rows.find(r=>r.id===m.a),b=rows.find(r=>r.id===m.b);a.played++;b.played++;
+  a.setsFor+=m.setsA;a.setsAgainst+=m.setsB;b.setsFor+=m.setsB;b.setsAgainst+=m.setsA;
+  if(m.setsA>m.setsB){a.w++;b.l++;a.pts+=m.setsA===3&&m.setsB===2?2:3;if(m.setsB===2)b.pts+=1;}
+  else{b.w++;a.l++;b.pts+=m.setsB===3&&m.setsA===2?2:3;if(m.setsA===2)a.pts+=1;}
+ });return rows.sort((a,b)=>b.pts-a.pts||(b.setsFor-b.setsAgainst)-(a.setsFor-a.setsAgainst)||b.w-a.w);
+}
+function renderStandings(){
+ document.getElementById('standingsList').innerHTML=[0,1,2,3].map(g=>{let rows=calcGroup(g);return `<div class="group"><h3>GRUP ${'ABCD'[g]}</h3><table><thead><tr><th>#</th><th>Tim</th><th>M</th><th>W</th><th>P</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}${i<2?' 🏅':''}</td><td>${escapeHtml(r.name)}</td><td>${r.played}</td><td>${r.w}</td><td><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`}).join('');
+}
+function renderBracket(){
+ let q=[['Juara A','Runner-up B'],['Juara B','Runner-up A'],['Juara C','Runner-up D'],['Juara D','Runner-up C']];
+ let qualifiers=[0,1,2,3].map(g=>calcGroup(g));
+ let names=q.map(pair=>pair.map(label=>{let g='ABCD'.indexOf(label.slice(-1));let pos=label.startsWith('Juara')?0:1;return qualifiers[g][pos].played===4?qualifiers[g][pos].name:label}));
+ document.getElementById('bracketList').innerHTML='<div class="grid">'+names.map((p,i)=>`<div class="group"><h3>PEREMPAT FINAL ${i+1}</h3><p>${escapeHtml(p[0])}</p><b>VS</b><p>${escapeHtml(p[1])}</p><span class="muted">Pemenang lanjut semifinal</span></div>`).join('')+'</div><div class="group" style="margin-top:12px"><h3>SEMIFINAL</h3><p>Pemenang QF 1 vs Pemenang QF 2</p><p>Pemenang QF 3 vs Pemenang QF 4</p><h3>FINAL & JUARA 3</h3><p>Final: Pemenang SF 1 vs Pemenang SF 2</p><p>Perebutan juara 3: Kalah SF 1 vs Kalah SF 2</p></div>';
+}
+renderTeams();renderMatchSelect();renderScore();renderSchedule();renderStandings();renderBracket();setRole('viewer');
+
+// ============================================================
+// LOGIN ADMIN: GitHub Pages <-> Google Apps Script <-> Spreadsheet
+// GANTI URL DI BAWAH DENGAN URL WEB APP APPS SCRIPT ANDA.
+// ============================================================
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzQpbAFaC-oukxsyeoinloo_jCJnmImIkf0JVOjMTD0fejKf6zTusnPm8J5v3zs4--y/exec';
+const API_FRAME = document.getElementById('volleyApiFrame');
+let apiRequestResolve = null;
+let apiRequestTimer = null;
+
+function callGoogleApi(data){
+ return new Promise((resolve,reject)=>{
+  if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes('TEMPEL_URL')){
+   reject(new Error('URL Google Apps Script belum dipasang pada index.html.'));
+   return;
+  }
+  if(apiRequestResolve){ reject(new Error('Permintaan sebelumnya masih diproses.')); return; }
+  const form=document.createElement('form');
+  form.method='POST'; form.action=GOOGLE_SCRIPT_URL; form.target='volleyApiFrame';
+  form.style.display='none';
+  Object.entries(data).forEach(([name,value])=>{
+   const input=document.createElement('input');
+   input.type='hidden'; input.name=name; input.value=String(value??'');
+   form.appendChild(input);
+  });
+  document.body.appendChild(form);
+  apiRequestResolve=resolve;
+  apiRequestTimer=setTimeout(()=>{
+   if(apiRequestResolve){apiRequestResolve=null;reject(new Error('Server tidak merespons. Periksa URL deployment dan koneksi internet.'));}
+  },20000);
+  form.submit();
+  setTimeout(()=>form.remove(),1000);
+ });
+}
+window.addEventListener('message',event=>{
+ if(event.source!==API_FRAME.contentWindow) return;
+ const msg=event.data;
+ if(!msg || msg.type!=='VOLLEY_ADMIN_API') return;
+ if(apiRequestResolve){
+  clearTimeout(apiRequestTimer);
+  const done=apiRequestResolve;apiRequestResolve=null;done(msg);
+ }
+});
+
+function openAdminLogin(){
+ document.getElementById('authMessage').textContent='';
+ document.getElementById('adminPassword').value='';
+ document.getElementById('loginOverlay').style.display='flex';
+ document.getElementById('adminUsername').focus();
+}
+function closeAdminLogin(){document.getElementById('loginOverlay').style.display='none';}
+
+async function submitAdminLogin(event){
+ event.preventDefault();
+ const button=document.getElementById('loginSubmitButton');
+ const message=document.getElementById('authMessage');
+ button.disabled=true;message.textContent='Memeriksa akun...';
+ try{
+  const result=await callGoogleApi({
+   action:'login',
+   username:document.getElementById('adminUsername').value.trim(),
+   password:document.getElementById('adminPassword').value
+  });
+  if(!result.ok) throw new Error(result.message||'Login gagal.');
+  sessionStorage.setItem('volleyAdminToken',result.token);
+  sessionStorage.setItem('volleyAdminName',result.name||'Administrator');
+  adminAuthenticated=true;
+  document.getElementById('roleSelect').value='admin';
+  closeAdminLogin();
+  setRole('admin');
+  message.textContent='Login berhasil.';
+ }catch(error){message.textContent=error.message||'Login gagal.';}
+ finally{button.disabled=false;}
+}
+
+async function adminLogout(){
+ const token=sessionStorage.getItem('volleyAdminToken')||'';
+ try{await callGoogleApi({action:'logout',token});}catch(e){}
+ sessionStorage.removeItem('volleyAdminToken');
+ sessionStorage.removeItem('volleyAdminName');
+ adminAuthenticated=false;
+ document.getElementById('roleSelect').value='viewer';
+ setRole('viewer');
+ document.getElementById('authMessage').textContent='Anda telah logout.';
+}
+
+async function restoreAdminSession(){
+ const token=sessionStorage.getItem('volleyAdminToken');
+ if(!token){setRole('viewer');return;}
+ try{
+  const result=await callGoogleApi({action:'validate',token});
+  if(result.ok){
+   adminAuthenticated=true;
+   document.getElementById('roleSelect').value='admin';
+   setRole('admin');
+  }else{
+   sessionStorage.removeItem('volleyAdminToken');
+   sessionStorage.removeItem('volleyAdminName');
+   setRole('viewer');
+  }
+ }catch(e){setRole('viewer');}
+}
+
+restoreAdminSession();
+</script>
+</body>
+</html>
