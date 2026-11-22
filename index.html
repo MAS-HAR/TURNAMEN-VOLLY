@@ -43,6 +43,73 @@ table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:10px 8px;
 .projection .points{font-size:clamp(70px,13vw,120px)}
 footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 @media(max-width:600px){.panel{padding:14px}.scoreboard{gap:8px}.team-score{padding:14px 6px}.score-controls button{min-width:40px;padding:9px}}
+
+/* ===== OPTIMASI TAMPILAN KHUSUS HP ===== */
+@media (max-width: 700px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { min-width: 320px; font-size: 14px; }
+  .wrap { width: 100%; max-width: 100%; padding-left: 10px; padding-right: 10px; }
+  header { padding: 16px 10px; }
+  .header-brand { gap: 9px; }
+  .header-logo { width: 78px; height: 78px; border-radius: 12px; }
+  .header-title h1 { font-size: clamp(18px, 5.8vw, 25px); line-height: 1.22; margin-bottom: 6px; }
+  .header-title p { font-size: 11px; line-height: 1.4; }
+
+  main.wrap > .row:first-child { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: end; }
+  main.wrap > .row:first-child > label { grid-column: 1 / -1; max-width: none !important; width: 100%; }
+  main.wrap > .row:first-child > .muted { grid-column: 1 / -1; }
+  main.wrap > .row:first-child > button { width: 100%; min-width: 0; padding: 10px 7px; font-size: 12px; }
+
+  #mainNav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin: 12px 0; }
+  #mainNav .tab { width: 100%; min-width: 0; padding: 11px 5px; font-size: 12px; line-height: 1.2; white-space: normal; }
+
+  .panel { padding: 12px; margin-bottom: 13px; border-radius: 12px; }
+  h2 { font-size: 19px; line-height: 1.25; }
+  h3 { font-size: 16px; }
+  .muted { font-size: 12px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .group { min-width: 0; padding: 10px; }
+  .group h3 { font-size: 15px; }
+  .team-row { gap: 5px; }
+  .team-row input { min-width: 0; }
+
+  .row { gap: 8px; margin: 9px 0; }
+  .row > * { min-width: 0; }
+  .row label { flex: 1 1 100%; }
+  button, .tab { min-height: 40px; }
+  input, select { min-height: 42px; font-size: 16px; padding: 9px; }
+
+  .scoreboard { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 7px; margin: 12px 0; }
+  .team-score { min-width: 0; padding: 12px 5px; border-radius: 10px; }
+  .team-score h3 { font-size: 14px; line-height: 1.25; overflow-wrap: anywhere; }
+  .points { font-size: clamp(42px, 13vw, 64px); }
+  .sets { font-size: 12px; }
+  .score-controls { gap: 5px; flex-wrap: wrap; }
+  .score-controls button { min-width: 38px; padding: 8px 9px; font-size: 18px; }
+
+  .match { padding: 10px; margin: 7px 0; }
+  .match-top { gap: 5px; font-size: 11px; }
+  table { min-width: 560px; font-size: 12px; }
+  th, td { padding: 8px 6px; white-space: nowrap; }
+  /* Tabel dapat digeser ke samping pada layar kecil */
+  .panel { overflow-x: auto; }
+  .panel > table { display: table; }
+
+  .projection { padding: 12px 8px; }
+  .projection .team-score { min-height: 125px; }
+  .projection .points { font-size: clamp(54px, 16vw, 82px); }
+  #loginOverlay > div { padding: 18px !important; }
+  footer { padding: 16px 8px; font-size: 11px; }
+}
+
+@media (max-width: 380px) {
+  .wrap { padding-left: 7px; padding-right: 7px; }
+  .panel { padding: 10px; }
+  #mainNav .tab { font-size: 11px; padding: 10px 3px; }
+  .grid { grid-template-columns: 1fr; }
+  .score-controls button { min-width: 34px; padding: 7px; }
+}
+
 </style>
 </head>
 <body>
