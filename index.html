@@ -105,7 +105,7 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 
 <section id="schedule" class="panel">
 <h2>Jadwal Babak Grup</h2>
-<p class="muted">Setiap grup memainkan sistem setengah kompetisi. Grup berisi 3 tim memainkan 3 pertandingan, sedangkan grup berisi 2 tim memainkan 1 pertandingan. Total 20 pertandingan babak grup. Karena hanya ada satu lapangan, pertandingan dimainkan bergantian.</p>
+<p class="muted">Setiap grup memainkan sistem setengah kompetisi. Urutan dibuat berselang-seling: A1 vs A2, B1 vs B2, C1 vs C2, dan seterusnya; kemudian putaran berikutnya. Setelah satu tim bertanding, pertandingan grup lain diselingkan agar tim tersebut mendapat jeda istirahat dan tidak bermain berurutan. Total 20 pertandingan babak grup.</p>
 <div class="row"><label>Filter grup<select id="groupFilter" onchange="renderSchedule()"><option value="ALL">Semua Grup</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label><label>Status<select id="statusFilter" onchange="renderSchedule()"><option value="ALL">Semua status</option><option value="Belum dimainkan">Belum dimainkan</option><option value="Selesai">Selesai</option></select></label></div>
 <div id="scheduleList"></div>
 </section>
@@ -152,16 +152,28 @@ let teams=Array.isArray(savedTeams)?[...savedTeams.slice(0,22)]:[...initialTeams
 while(teams.length<22)teams.push(initialTeams[teams.length]);
 let matches=JSON.parse(localStorage.getItem('volleyMatches')||'null');
 let currentId=0;
-function makeMatches(){
+function makeMatches(previous=[]){
+ // Susun pertandingan per putaran, bukan menyelesaikan satu grup sekaligus.
+ // Putaran 1: tim 1 vs 2 dari setiap grup; Putaran 2: tim 2 vs 3;
+ // Putaran 3: tim 1 vs 3. Grup 2 tim hanya bermain pada Putaran 1.
+ // Dengan selingan pertandingan grup lain, tidak ada tim yang bermain berurutan.
+ const rounds=[[0,1],[1,2],[0,2]];
+ const oldByPair=new Map((Array.isArray(previous)?previous:[]).map(m=>[`${m.group}|${Math.min(m.a,m.b)}|${Math.max(m.a,m.b)}`,m]));
  const out=[];let id=1;
- GROUPS.forEach((group,g)=>{
-  const ids=Array.from({length:group.count},(_,i)=>GROUP_OFFSETS[g]+i);
-  for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++)out.push({id:id++,group:group.name,a:ids[i],b:ids[j],pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});
+ rounds.forEach(([first,second])=>{
+  GROUPS.forEach((group,g)=>{
+   if(group.count<=second)return;
+   const a=GROUP_OFFSETS[g]+first,b=GROUP_OFFSETS[g]+second;
+   const key=`${group.name}|${Math.min(a,b)}|${Math.max(a,b)}`;
+   const old=oldByPair.get(key);
+   out.push(old?{...old,id:id++,group:group.name,a,b}:{id:id++,group:group.name,a,b,pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});
+  });
  });
  return out;
 }
-// Jadwal lama (40 pertandingan) dibuat ulang karena format grup berubah menjadi 8 grup.
-if(!Array.isArray(matches)||matches.length!==20||matches.some(m=>!GROUPS.some(g=>g.name===m.group)))matches=makeMatches();
+// Jadwal disusun ulang secara berselang-seling. Hasil/skor lama untuk pasangan
+// tim yang sama tetap dipertahankan; pertandingan baru dimulai dari skor 0.
+matches=makeMatches(matches);
 function save(){localStorage.setItem('volleyTeams',JSON.stringify(teams));localStorage.setItem('volleyMatches',JSON.stringify(matches));}
 function current(){return matches.find(m=>m.id===currentId)||matches[0]}
 function teamName(index){return teams[index]||`TIM ${index+1}`}
@@ -231,7 +243,7 @@ function resetCurrent(){if(!adminAuthenticated){alert('Silakan login sebagai ADM
 function renderSchedule(){
  let gf=document.getElementById('groupFilter').value,sf=document.getElementById('statusFilter').value;
  let list=matches.filter(m=>(gf==='ALL'||m.group===gf)&&(sf==='ALL'||(m.done?'Selesai':'Belum dimainkan')===sf));
- document.getElementById('scheduleList').innerHTML=list.map(m=>`<div class="match"><div class="match-top"><span>PERTANDINGAN ${m.id} · GRUP ${m.group}</span><span class="badge">${m.done?'Selesai':'Belum dimainkan'}</span></div><b>${escapeHtml(teamName(m.a))} vs ${escapeHtml(teamName(m.b))}</b><div class="muted">${m.done?`Hasil set: ${m.setResults.join(', ')} · Skor set ${m.setsA}-${m.setsB}`:'Lapangan 1 · Urutan sesuai nomor pertandingan'}</div><button class="light" style="margin-top:8px" onclick="selectMatch(${m.id})">Buka di Live Score</button></div>`).join('')||'<p class="muted">Tidak ada pertandingan.</p>';
+ document.getElementById('scheduleList').innerHTML=list.map(m=>`<div class="match"><div class="match-top"><span>PERTANDINGAN ${m.id} · GRUP ${m.group}</span><span class="badge">${m.done?'Selesai':'Belum dimainkan'}</span></div><b>${escapeHtml(teamName(m.a))} vs ${escapeHtml(teamName(m.b))}</b><div class="muted">${m.done?`Hasil set: ${m.setResults.join(', ')} · Skor set ${m.setsA}-${m.setsB}`:'Lapangan 1 · Diselingi pertandingan grup lain sebagai jeda istirahat'}</div><button class="light" style="margin-top:8px" onclick="selectMatch(${m.id})">Buka di Live Score</button></div>`).join('')||'<p class="muted">Tidak ada pertandingan.</p>';
 }
 function selectMatch(id){currentId=id;document.getElementById('matchSelect').value=id;showTab('score');renderScore();}
 function calcGroup(g){
