@@ -61,7 +61,7 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 </div>
 <iframe name="volleyApiFrame" id="volleyApiFrame" title="API login" style="display:none"></iframe>
 
-<header><div class="wrap"><h1>VOLLEYBALL TOURNAMENT 2026</h1><p>20 Tim · 4 Grup · 1 Lapangan · Best of 5</p></div></header>
+<header><div class="wrap"><h1>VOLLEYBALL TOURNAMENT 2026</h1><p>22 Tim · 8 Grup · 1 Lapangan · Best of 5</p></div></header>
 <main class="wrap">
 <div class="row" style="margin-top:18px">
 <label style="max-width:260px">Mode tampilan
@@ -96,8 +96,8 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 </section>
 
 <section id="teams" class="panel">
-<h2>Pengelolaan 20 Tim</h2>
-<p class="muted"><b>Edit nama tim di halaman ini.</b> Ganti tulisan pada kotak nama tim, lalu klik “Simpan Nama Tim”. Tim dibagi otomatis: 5 tim per grup.</p>
+<h2>Pengelolaan 22 Tim</h2>
+<p class="muted"><b>Edit nama tim di halaman ini.</b> Ganti tulisan pada kotak nama tim, lalu klik “Simpan Nama Tim”. Pembagian grup: A 3 tim, B 3 tim, C 3 tim, D 2 tim, E 3 tim, F 3 tim, G 3 tim, dan H 2 tim.</p>
 <div class="grid" id="teamEditor"></div>
 <div class="row"><button class="primary" onclick="saveTeams()">Simpan Nama Tim</button><button class="light" onclick="resetTeams()">Kembalikan Nama Awal</button></div>
 <div id="teamMessage" class="muted"></div>
@@ -105,8 +105,8 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 
 <section id="schedule" class="panel">
 <h2>Jadwal Babak Grup</h2>
-<p class="muted">Setiap grup memainkan sistem setengah kompetisi: 10 pertandingan per grup, total 40 pertandingan. Karena hanya ada satu lapangan, pertandingan dimainkan bergantian.</p>
-<div class="row"><label>Filter grup<select id="groupFilter" onchange="renderSchedule()"><option value="ALL">Semua Grup</option><option>A</option><option>B</option><option>C</option><option>D</option></select></label><label>Status<select id="statusFilter" onchange="renderSchedule()"><option value="ALL">Semua status</option><option value="Belum dimainkan">Belum dimainkan</option><option value="Selesai">Selesai</option></select></label></div>
+<p class="muted">Setiap grup memainkan sistem setengah kompetisi. Grup berisi 3 tim memainkan 3 pertandingan, sedangkan grup berisi 2 tim memainkan 1 pertandingan. Total 20 pertandingan babak grup. Karena hanya ada satu lapangan, pertandingan dimainkan bergantian.</p>
+<div class="row"><label>Filter grup<select id="groupFilter" onchange="renderSchedule()"><option value="ALL">Semua Grup</option><option>A</option><option>B</option><option>C</option><option>D</option><option>E</option><option>F</option><option>G</option><option>H</option></select></label><label>Status<select id="statusFilter" onchange="renderSchedule()"><option value="ALL">Semua status</option><option value="Belum dimainkan">Belum dimainkan</option><option value="Selesai">Selesai</option></select></label></div>
 <div id="scheduleList"></div>
 </section>
 
@@ -118,9 +118,9 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 
 <section id="bracket" class="panel">
 <h2>Bagan Babak Gugur</h2>
-<p class="muted">Delapan tim lolos: juara dan runner-up Grup A, B, C, dan D. Pasangan perempat final mengikuti susunan di bawah ini. Nama tim akan terisi setelah babak grup selesai dan klasemen tersedia.</p>
+<p class="muted">Enam belas tim lolos: juara grup (peringkat 1) dan runner-up (peringkat 2) dari Grup A sampai H. Susunan babak 16 besar mengikuti pasangan yang telah ditetapkan. Nama tim terisi otomatis setelah seluruh pertandingan grup masing-masing selesai.</p>
 <div id="bracketList"></div>
-<p class="muted">QF1: Juara A vs Runner-up B · QF2: Juara B vs Runner-up A · QF3: Juara C vs Runner-up D · QF4: Juara D vs Runner-up C. Pemenang QF1/QF2 bertemu di SF1, pemenang QF3/QF4 di SF2.</p>
+<p class="muted">Perempat final: pemenang 16 Besar 1 vs 2, 3 vs 4, 5 vs 6, dan 7 vs 8. Semifinal: pemenang perempat final 1 vs 2 serta pemenang perempat final 3 vs 4. Pemenang semifinal bertemu di final.</p>
 </section>
 
 <section id="projector" class="panel">
@@ -141,19 +141,27 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 <footer>Volleyball Tournament 2026 · Login ADMIN menggunakan Google Spreadsheet · Data pertandingan saat ini tersimpan pada browser (localStorage).</footer>
 
 <script>
-const initialTeams=Array.from({length:20},(_,i)=>`TIM ${String(i+1).padStart(2,'0')}`);
-let teams=JSON.parse(localStorage.getItem('volleyTeams')||'null')||initialTeams;
+const GROUPS=[
+ {name:'A',count:3},{name:'B',count:3},{name:'C',count:3},{name:'D',count:2},
+ {name:'E',count:3},{name:'F',count:3},{name:'G',count:3},{name:'H',count:2}
+];
+const GROUP_OFFSETS=GROUPS.map((g,i)=>GROUPS.slice(0,i).reduce((n,x)=>n+x.count,0));
+const initialTeams=Array.from({length:22},(_,i)=>`TIM ${String(i+1).padStart(2,'0')}`);
+let savedTeams=JSON.parse(localStorage.getItem('volleyTeams')||'null');
+let teams=Array.isArray(savedTeams)?[...savedTeams.slice(0,22)]:[...initialTeams];
+while(teams.length<22)teams.push(initialTeams[teams.length]);
 let matches=JSON.parse(localStorage.getItem('volleyMatches')||'null');
 let currentId=0;
 function makeMatches(){
  const out=[];let id=1;
- for(let g=0;g<4;g++){
-  const ids=Array.from({length:5},(_,i)=>g*5+i);
-  for(let i=0;i<5;i++)for(let j=i+1;j<5;j++)out.push({id:id++,group:'ABCD'[g],a:ids[i],b:ids[j],pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});
- }
+ GROUPS.forEach((group,g)=>{
+  const ids=Array.from({length:group.count},(_,i)=>GROUP_OFFSETS[g]+i);
+  for(let i=0;i<ids.length;i++)for(let j=i+1;j<ids.length;j++)out.push({id:id++,group:group.name,a:ids[i],b:ids[j],pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});
+ });
  return out;
 }
-if(!matches||matches.length!==40)matches=makeMatches();
+// Jadwal lama (40 pertandingan) dibuat ulang karena format grup berubah menjadi 8 grup.
+if(!Array.isArray(matches)||matches.length!==20||matches.some(m=>!GROUPS.some(g=>g.name===m.group)))matches=makeMatches();
 function save(){localStorage.setItem('volleyTeams',JSON.stringify(teams));localStorage.setItem('volleyMatches',JSON.stringify(matches));}
 function current(){return matches.find(m=>m.id===currentId)||matches[0]}
 function teamName(index){return teams[index]||`TIM ${index+1}`}
@@ -181,8 +189,8 @@ function setRole(role){
 }
 function renderTeams(){
  const el=document.getElementById('teamEditor');el.innerHTML='';
- for(let g=0;g<4;g++){let box=document.createElement('div');box.className='group';box.innerHTML=`<h3>GRUP ${'ABCD'[g]}</h3>`;
-  for(let i=0;i<5;i++){let ix=g*5+i,row=document.createElement('div');row.className='team-row';row.innerHTML=`<small>${'ABCD'[g]}${i+1}</small><input aria-label="Nama tim ${ix+1}" value="${escapeHtml(teams[ix])}" data-team="${ix}">`;box.appendChild(row)}el.appendChild(box)}
+ GROUPS.forEach((group,g)=>{let box=document.createElement('div');box.className='group';box.innerHTML=`<h3>GRUP ${group.name} · ${group.count} TIM</h3>`;
+  for(let i=0;i<group.count;i++){let ix=GROUP_OFFSETS[g]+i,row=document.createElement('div');row.className='team-row';row.innerHTML=`<small>${group.name}${i+1}</small><input aria-label="Nama tim ${ix+1}" value="${escapeHtml(teams[ix])}" data-team="${ix}">`;box.appendChild(row)}el.appendChild(box)});
 }
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function saveTeams(){
@@ -227,23 +235,26 @@ function renderSchedule(){
 }
 function selectMatch(id){currentId=id;document.getElementById('matchSelect').value=id;showTab('score');renderScore();}
 function calcGroup(g){
- let ids=Array.from({length:5},(_,i)=>g*5+i);
+ const group=GROUPS[g];
+ const ids=Array.from({length:group.count},(_,i)=>GROUP_OFFSETS[g]+i);
  let rows=ids.map(id=>({id,name:teamName(id),played:0,w:0,l:0,pts:0,setsFor:0,setsAgainst:0,points:0}));
- matches.filter(m=>m.group==='ABCD'[g]&&m.done).forEach(m=>{
-  let a=rows.find(r=>r.id===m.a),b=rows.find(r=>r.id===m.b);a.played++;b.played++;
+ matches.filter(m=>m.group===group.name&&m.done).forEach(m=>{
+  let a=rows.find(r=>r.id===m.a),b=rows.find(r=>r.id===m.b);if(!a||!b)return;a.played++;b.played++;
   a.setsFor+=m.setsA;a.setsAgainst+=m.setsB;b.setsFor+=m.setsB;b.setsAgainst+=m.setsA;
   if(m.setsA>m.setsB){a.w++;b.l++;a.pts+=m.setsA===3&&m.setsB===2?2:3;if(m.setsB===2)b.pts+=1;}
   else{b.w++;a.l++;b.pts+=m.setsB===3&&m.setsA===2?2:3;if(m.setsA===2)a.pts+=1;}
  });return rows.sort((a,b)=>b.pts-a.pts||(b.setsFor-b.setsAgainst)-(a.setsFor-a.setsAgainst)||b.w-a.w);
 }
 function renderStandings(){
- document.getElementById('standingsList').innerHTML=[0,1,2,3].map(g=>{let rows=calcGroup(g);return `<div class="group"><h3>GRUP ${'ABCD'[g]}</h3><table><thead><tr><th>#</th><th>Tim</th><th>M</th><th>W</th><th>P</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}${i<2?' 🏅':''}</td><td>${escapeHtml(r.name)}</td><td>${r.played}</td><td>${r.w}</td><td><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`}).join('');
+ document.getElementById('standingsList').innerHTML=GROUPS.map((group,g)=>{let rows=calcGroup(g);return `<div class="group"><h3>GRUP ${group.name}</h3><table><thead><tr><th>#</th><th>Tim</th><th>M</th><th>W</th><th>P</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}${i<2?' 🏅':''}</td><td>${escapeHtml(r.name)}</td><td>${r.played}</td><td>${r.w}</td><td><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`}).join('');
 }
 function renderBracket(){
- let q=[['Juara A','Runner-up B'],['Juara B','Runner-up A'],['Juara C','Runner-up D'],['Juara D','Runner-up C']];
- let qualifiers=[0,1,2,3].map(g=>calcGroup(g));
- let names=q.map(pair=>pair.map(label=>{let g='ABCD'.indexOf(label.slice(-1));let pos=label.startsWith('Juara')?0:1;return qualifiers[g][pos].played===4?qualifiers[g][pos].name:label}));
- document.getElementById('bracketList').innerHTML='<div class="grid">'+names.map((p,i)=>`<div class="group"><h3>PEREMPAT FINAL ${i+1}</h3><p>${escapeHtml(p[0])}</p><b>VS</b><p>${escapeHtml(p[1])}</p><span class="muted">Pemenang lanjut semifinal</span></div>`).join('')+'</div><div class="group" style="margin-top:12px"><h3>SEMIFINAL</h3><p>Pemenang QF 1 vs Pemenang QF 2</p><p>Pemenang QF 3 vs Pemenang QF 4</p><h3>FINAL & JUARA 3</h3><p>Final: Pemenang SF 1 vs Pemenang SF 2</p><p>Perebutan juara 3: Kalah SF 1 vs Kalah SF 2</p></div>';
+ const pairings=[['A1','E2'],['B1','F2'],['C1','G2'],['D1','H2'],['E1','A2'],['F1','B2'],['G1','C2'],['H1','D2']];
+ const groupIndex={A:0,B:1,C:2,D:3,E:4,F:5,G:6,H:7};
+ const ready=GROUPS.every((group,g)=>matches.filter(m=>m.group===group.name&&m.done).length===group.count*(group.count-1)/2);
+ const names=pairings.map(pair=>pair.map(code=>{const g=groupIndex[code[0]],pos=Number(code[1])-1;return ready?calcGroup(g)[pos].name:code==='A1'?'Juara Grup A':code==='E2'?'Runner-up Grup E':(pos===0?'Juara Grup ':'Runner-up Grup ')+code[0]}));
+ const cards=names.map((p,i)=>`<div class="group"><h3>16 BESAR ${i+1}</h3><p>${escapeHtml(p[0])}</p><b>VS</b><p>${escapeHtml(p[1])}</p><span class="muted">Pemenang lanjut ke perempat final</span></div>`).join('');
+ document.getElementById('bracketList').innerHTML='<div class="grid">'+cards+'</div><div class="group" style="margin-top:12px"><h3>PEREMPAT FINAL</h3><p>QF1: Pemenang 16 Besar 1 vs Pemenang 16 Besar 2</p><p>QF2: Pemenang 16 Besar 3 vs Pemenang 16 Besar 4</p><p>QF3: Pemenang 16 Besar 5 vs Pemenang 16 Besar 6</p><p>QF4: Pemenang 16 Besar 7 vs Pemenang 16 Besar 8</p><h3>SEMIFINAL</h3><p>SF1: Pemenang QF1 vs Pemenang QF2</p><p>SF2: Pemenang QF3 vs Pemenang QF4</p><h3>FINAL</h3><p>Pemenang SF1 vs Pemenang SF2</p></div>';
 }
 renderTeams();renderMatchSelect();renderScore();renderSchedule();renderStandings();renderBracket();setRole('viewer');
 
