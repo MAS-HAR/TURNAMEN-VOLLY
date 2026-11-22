@@ -77,12 +77,13 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 </header>
 <main class="wrap">
 <div class="row" style="margin-top:18px">
-<label style="max-width:260px">Mode tampilan
-<select id="roleSelect" onchange="setRole(this.value)">
-<option value="admin">ADMIN — Pengelola turnamen</option>
-<option value="viewer">PENONTON — Tampilan publik</option>
+<label style="max-width:220px">Kategori Turnamen
+<select id="categorySelect" onchange="setCategory(this.value)">
+<option value="PRIA">PRIA</option>
+<option value="PUTRI">WANITA</option>
 </select>
 </label>
+
 <span class="muted" id="roleDescription">Mode penonton: hanya dapat melihat jadwal, klasemen, bagan final, dan Score.</span>
 <button class="primary" id="adminLoginButton" type="button" onclick="openAdminLogin()">Login ADMIN</button>
 <button class="red" id="adminLogoutButton" type="button" onclick="adminLogout()" style="display:none">Logout</button>
@@ -151,15 +152,20 @@ footer{text-align:center;color:#718096;font-size:12px;padding:20px}
 <button class="primary" style="margin-top:12px" onclick="window.print()">Cetak / Simpan PDF</button>
 </section>
 </main>
-<footer>Volleyball Tournament 2026 · Login ADMIN menggunakan Google Spreadsheet · Data pertandingan saat ini tersimpan pada browser (localStorage).</footer>
+<footer>TURNAMEN BOLA VOLY MARINIR SEBATIK CUP 2026 · Login ADMIN menggunakan Google Spreadsheet · Data pertandingan saat ini tersimpan pada browser (localStorage).</footer>
 
 <script>
-const GROUPS=[
+const MEN_GROUPS=[
  {name:'A',count:3},{name:'B',count:3},{name:'C',count:3},{name:'D',count:2},
  {name:'E',count:3},{name:'F',count:3},{name:'G',count:3},{name:'H',count:2}
 ];
-const GROUP_OFFSETS=GROUPS.map((g,i)=>GROUPS.slice(0,i).reduce((n,x)=>n+x.count,0));
-const initialTeams=Array.from({length:22},(_,i)=>`TIM ${String(i+1).padStart(2,'0')}`);
+const WOMEN_GROUPS=[
+ {name:'A',count:3},{name:'B',count:3},{name:'C',count:3},{name:'D',count:3}
+];
+let activeCategory='PRIA';
+let GROUPS=MEN_GROUPS;
+let GROUP_OFFSETS=GROUPS.map((g,i)=>GROUPS.slice(0,i).reduce((n,x)=>n+x.count,0));
+let initialTeams=Array.from({length:22},(_,i)=>`TIM ${String(i+1).padStart(2,'0')}`);
 let savedTeams=JSON.parse(localStorage.getItem('volleyTeams')||'null');
 let teams=Array.isArray(savedTeams)?[...savedTeams.slice(0,22)]:[...initialTeams];
 while(teams.length<22)teams.push(initialTeams[teams.length]);
@@ -187,7 +193,29 @@ function makeMatches(previous=[]){
 // Jadwal disusun ulang secara berselang-seling. Hasil/skor lama untuk pasangan
 // tim yang sama tetap dipertahankan; pertandingan baru dimulai dari skor 0.
 matches=makeMatches(matches);
-function save(){localStorage.setItem('volleyTeams',JSON.stringify(teams));localStorage.setItem('volleyMatches',JSON.stringify(matches));}
+function categoryStorageKey(base,category=activeCategory){return category==='PRIA'?base:base+'_PUTRI';}
+function save(){localStorage.setItem(categoryStorageKey('volleyTeams'),JSON.stringify(teams));localStorage.setItem(categoryStorageKey('volleyMatches'),JSON.stringify(matches));}
+function setCategory(category){
+ if(category===activeCategory)return;
+ save();
+ activeCategory=category==='PUTRI'?'PUTRI':'PRIA';
+ GROUPS=activeCategory==='PUTRI'?WOMEN_GROUPS:MEN_GROUPS;
+ GROUP_OFFSETS=GROUPS.map((g,i)=>GROUPS.slice(0,i).reduce((n,x)=>n+x.count,0));
+ const total=GROUPS.reduce((n,g)=>n+g.count,0);
+ initialTeams=Array.from({length:total},(_,i)=>`TIM ${String(i+1).padStart(2,'0')}`);
+ const st=JSON.parse(localStorage.getItem(categoryStorageKey('volleyTeams'))||'null');
+ teams=Array.isArray(st)?[...st.slice(0,total)]:[...initialTeams];
+ while(teams.length<total)teams.push(initialTeams[teams.length]);
+ const sm=JSON.parse(localStorage.getItem(categoryStorageKey('volleyMatches'))||'null');
+ matches=makeMatches(Array.isArray(sm)?sm:[]);currentId=1;
+ document.getElementById('categorySelect').value=activeCategory;
+ document.querySelector('header .header-title p').textContent=activeCategory==='PUTRI'?'12 Tim · 4 Grup · 1 Lapangan · Best of 5':'22 Tim · 8 Grup · 1 Lapangan · Best of 5';
+ const gf=document.getElementById('groupFilter');gf.innerHTML='<option value="ALL">Semua Grup</option>'+GROUPS.map(g=>`<option value="${g.name}">${g.name}</option>`).join('');
+ document.getElementById('scheduleIntro').textContent=activeCategory==='PUTRI'?'Jadwal 12 pertandingan disusun berselang-seling antargrup agar setiap tim mendapat jeda istirahat.':'Jadwal 20 pertandingan disusun berselang-seling antargrup agar setiap tim mendapat jeda istirahat.';
+ document.getElementById('bracketIntro').textContent=activeCategory==='PUTRI'?'8 besar: A1 vs C2, B1 vs D2, C1 vs A2, D1 vs B2.':'16 besar: A1 vs E2, B1 vs F2, C1 vs G2, D1 vs H2, E1 vs A2, F1 vs B2, G1 vs C2, H1 vs D2.';
+ renderTeams();renderMatchSelect();renderScore();renderSchedule();renderStandings();renderBracket();
+ showTab(currentRole==='admin'?'score':'schedule');
+}
 function current(){return matches.find(m=>m.id===currentId)||matches[0]}
 function teamName(index){return teams[index]||`TIM ${index+1}`}
 function showTab(id){document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===id));document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));if(id==='teams')renderTeams();if(id==='schedule')renderSchedule();if(id==='standings')renderStandings();if(id==='bracket')renderBracket();if(id==='projector')renderScore();}
@@ -221,7 +249,7 @@ function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':
 function saveTeams(){
  if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}
  document.querySelectorAll('[data-team]').forEach(input=>teams[+input.dataset.team]=input.value.trim()||initialTeams[+input.dataset.team]);
- save();renderTeams();renderMatchSelect();renderScore();document.getElementById('teamMessage').textContent='Nama tim berhasil disimpan di browser ini.';
+ save();renderTeams();renderMatchSelect();renderScore();renderStandings();renderBracket();document.getElementById('teamMessage').textContent='Nama tim berhasil disimpan di browser ini.';
 }
 function resetTeams(){if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}if(!confirm('Kembalikan semua nama tim ke nama awal?'))return;teams=[...initialTeams];save();renderTeams();renderMatchSelect();renderScore();}
 function renderMatchSelect(){
@@ -250,9 +278,9 @@ function finishSet(){
  if(winner==='A')m.setsA++;else m.setsB++;
  m.pointsA=0;m.pointsB=0;
  if(m.setsA===3||m.setsB===3){m.done=true;}else m.setNo++;
- save();renderScore();renderSchedule();renderStandings();
+ save();renderScore();renderSchedule();renderStandings();renderBracket();
 }
-function resetCurrent(){if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}if(!confirm('Reset skor pertandingan ini?'))return;let m=current();Object.assign(m,{pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});save();renderScore();renderSchedule();renderStandings();}
+function resetCurrent(){if(!adminAuthenticated){alert('Silakan login sebagai ADMIN.');return;}if(!confirm('Reset skor pertandingan ini?'))return;let m=current();Object.assign(m,{pointsA:0,pointsB:0,setsA:0,setsB:0,setNo:1,done:false,setResults:[]});save();renderScore();renderSchedule();renderStandings();renderBracket();}
 function renderSchedule(){
  let gf=document.getElementById('groupFilter').value,sf=document.getElementById('statusFilter').value;
  let list=matches.filter(m=>(gf==='ALL'||m.group===gf)&&(sf==='ALL'||(m.done?'Selesai':'Belum dimainkan')===sf));
@@ -273,12 +301,33 @@ function calcGroup(g){
 function renderStandings(){
  document.getElementById('standingsList').innerHTML=GROUPS.map((group,g)=>{let rows=calcGroup(g);return `<div class="group"><h3>GRUP ${group.name}</h3><table><thead><tr><th>#</th><th>Tim</th><th>M</th><th>W</th><th>P</th></tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}${i<2?' 🏅':''}</td><td>${escapeHtml(r.name)}</td><td>${r.played}</td><td>${r.w}</td><td><b>${r.pts}</b></td></tr>`).join('')}</tbody></table></div>`}).join('');
 }
+function groupIsComplete(g){
+ const group=GROUPS[g];
+ const required=group.count*(group.count-1)/2;
+ return matches.filter(m=>m.group===group.name&&m.done).length===required;
+}
+function resolveGroupPosition(code){
+ const groupIndex=GROUPS.findIndex(g=>g.name===code[0]);
+ if(groupIndex<0||!groupIsComplete(groupIndex))return null;
+ const pos=Number(code.slice(1))-1;
+ const ranked=calcGroup(groupIndex);
+ return ranked[pos]?ranked[pos].name:null;
+}
 function renderBracket(){
+ if(activeCategory==='PUTRI'){
+  const pairings=[['A1','C2'],['B1','D2'],['C1','A2'],['D1','B2']];
+  const cards=pairings.map((pair,i)=>{
+   const names=pair.map(code=>resolveGroupPosition(code)||((code[1]==='1'?'Juara':'Runner-up')+' Grup '+code[0]+' · menunggu hasil'));
+   return `<div class="group"><h3>8 BESAR ${i+1}</h3><p>${escapeHtml(names[0])}</p><b>VS</b><p>${escapeHtml(names[1])}</p><span class="muted">Pemenang lanjut ke semifinal</span></div>`;
+  }).join('');
+  document.getElementById('bracketList').innerHTML='<div class="grid">'+cards+'</div><div class="group" style="margin-top:12px"><h3>SEMIFINAL</h3><p>SF1: Pemenang 8 Besar 1 vs Pemenang 8 Besar 2</p><p>SF2: Pemenang 8 Besar 3 vs Pemenang 8 Besar 4</p><h3>FINAL</h3><p>Pemenang SF1 vs Pemenang SF2</p></div>';
+  return;
+ }
  const pairings=[['A1','E2'],['B1','F2'],['C1','G2'],['D1','H2'],['E1','A2'],['F1','B2'],['G1','C2'],['H1','D2']];
- const groupIndex={A:0,B:1,C:2,D:3,E:4,F:5,G:6,H:7};
- const ready=GROUPS.every((group,g)=>matches.filter(m=>m.group===group.name&&m.done).length===group.count*(group.count-1)/2);
- const names=pairings.map(pair=>pair.map(code=>{const g=groupIndex[code[0]],pos=Number(code[1])-1;return ready?calcGroup(g)[pos].name:code==='A1'?'Juara Grup A':code==='E2'?'Runner-up Grup E':(pos===0?'Juara Grup ':'Runner-up Grup ')+code[0]}));
- const cards=names.map((p,i)=>`<div class="group"><h3>16 BESAR ${i+1}</h3><p>${escapeHtml(p[0])}</p><b>VS</b><p>${escapeHtml(p[1])}</p><span class="muted">Pemenang lanjut ke perempat final</span></div>`).join('');
+ const cards=pairings.map((pair,i)=>{
+  const names=pair.map(code=>resolveGroupPosition(code)||((code[1]==='1'?'Juara':'Runner-up')+' Grup '+code[0]+' · menunggu hasil'));
+  return `<div class="group"><h3>16 BESAR ${i+1}</h3><p>${escapeHtml(names[0])}</p><b>VS</b><p>${escapeHtml(names[1])}</p><span class="muted">Pemenang lanjut ke perempat final</span></div>`;
+ }).join('');
  document.getElementById('bracketList').innerHTML='<div class="grid">'+cards+'</div><div class="group" style="margin-top:12px"><h3>PEREMPAT FINAL</h3><p>QF1: Pemenang 16 Besar 1 vs Pemenang 16 Besar 2</p><p>QF2: Pemenang 16 Besar 3 vs Pemenang 16 Besar 4</p><p>QF3: Pemenang 16 Besar 5 vs Pemenang 16 Besar 6</p><p>QF4: Pemenang 16 Besar 7 vs Pemenang 16 Besar 8</p><h3>SEMIFINAL</h3><p>SF1: Pemenang QF1 vs Pemenang QF2</p><p>SF2: Pemenang QF3 vs Pemenang QF4</p><h3>FINAL</h3><p>Pemenang SF1 vs Pemenang SF2</p></div>';
 }
 renderTeams();renderMatchSelect();renderScore();renderSchedule();renderStandings();renderBracket();setRole('viewer');
